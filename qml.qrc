@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>RelationshipGrid.qml</file>
+        <file alias="neutral">images/neutral.png</file>
+        <file alias="like">images/good.png</file>
+        <file alias="hate">images/bad.png</file>
+    </qresource>
+</RCC>
