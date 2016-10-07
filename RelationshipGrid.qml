@@ -3,34 +3,88 @@ import QtQuick.Controls 1.4
 
 Item {
     id: root
-    signal relationshipChanged(int index1, int index2, int rating)
+    signal relationshipChanged(int index1, int index2, int ratingIndex, var ratingValue, string ratingName)
+    signal roomAdded(var room)
+
     property real rowHeight: 16
     property real nameWidth: 200
     property real sizeWidth: 80
-    property int  defaultRating: 1
-    property var  ratingNames: ['hate','neutral','like']
-    property var  ørelationships: ({})
+    property int  defaultRating: 2
+    property var  ratingNames:  ['hate','bleh','zero','like','love']
+    property var  ratingValues: [-100,-50,0,1,9]
     property var  ørooms: []
+    property var  ødots:  ({})
     property int highlight1: -1
     property int highlight2: -1
 
-    height: canvas.height + rowHeight
+    height: canvas.height
 
     property real labelWidth: nameWidth + sizeWidth
 
     function addRoom(name,size){
         var index = ørooms.length;
-        var roomDetails = { name:name||'Room '+(ørooms.length+1), size:size||300, index:index };
-        ørooms.push( roomDetails );
-        row.createObject(canvas,roomDetails);
-        ørooms = ørooms; // Force recalculation
-        if (index) for (var u=index;u--;) dot.createObject(canvas,{u:u,v:index});
+        var r = room.createObject(canvas,{
+          name: name||'Room '+(index+1),
+          size: size||300,
+          index:index
+        });
+        r.focusName();
+        ørooms.push(r);
+        ørooms = ørooms; //force recalculation of dependents
+        roomAdded(r);
+        if (index){
+            for (var u=index;u--;) {
+                var d = dot.createObject(canvas,{u:u,v:index});
+                ødots[[u,index]] = d;
+            }
+        }
         canvas.requestPaint();
+    }
+
+    function setRelationship( u, v, rating ){
+        ødots[[u,v]].rating = rating;
+    }
+
+    function saveTo(fileUrl){
+        var json = {};
+        json.rooms = ørooms.map(function(r){ return { name:r.name, size:r.size } });
+        json.relationships = {};
+        for (var uv in ødots) if (ødots[uv].rating!=defaultRating) json.relationships[uv]=ødots[uv].rating;
+        console.log(JSON.stringify(json));
+    }
+
+    function loadFrom(jsObject){
+        ørooms.forEach(function(r){ r.destroy() });
+        ørooms.length=0;
+        for (var uv in ødots){
+            var d = ødots[uv];
+            delete ødots[uv];
+            d.destroy();
+        }
+
+        jsObject.rooms.forEach(function(r){ addRoom(r.name,r.size) });
+        for (var uv in jsObject.relationships){
+            var rating = jsObject.relationships[uv];
+            uv = uv.split(',');
+            setRelationship(uv[0],uv[1],rating);
+        }
+
+        root.forceActiveFocus();
     }
 
     Component {
         id: dot
         Image {
+            opacity: {
+                var highlighted=true;
+                if (~highlight1){
+                    if (~highlight2) // over specific dot
+                        highlighted = (highlight1==u && v<=highlight2) || (highlight2==v && u>=highlight1);
+                    else // over specific room row
+                        highlighted = highlight1==u || highlight1==v || highlight2==u || highlight2==v;
+                }
+                return highlighted ? 1 : 0.2;
+            }
             property int rating: defaultRating
             property int u
             property int v
@@ -44,21 +98,25 @@ Item {
                 hoverEnabled:true
                 onEntered: highlight1=u, highlight2=v
                 onExited:  highlight1 = highlight2 = -1
-                onClicked: {
-                    rating = (rating + 1) % ratingNames.length;
-                    root.relationshipChanged(u,v,rating);
-                }
+                onClicked: rating = (rating + 1) % ratingNames.length;
             }
+            onRatingChanged: root.relationshipChanged(u,v,rating,root.ratingValues[rating],root.ratingNames[rating]);
         }
     }
 
     Component {
-        id: row
+        id: room
         Item {
             opacity: ~highlight1 ? (highlight1==index || highlight2==index ? 1 : 0.2) : 1
-            property string name
-            property int    size
-            property int    index
+            property alias name: nameEditor.text
+            property alias size: sizeEditor.text
+            property int   index
+
+            function focusName(){
+                nameEditor.forceActiveFocus();
+                nameEditor.selectAll();
+            }
+
             width: labelWidth
             height: rowHeight
             y: index*rowHeight
@@ -71,6 +129,7 @@ Item {
                 onEditingFinished: focus=false
                 activeFocusOnTab: true
                 selectByMouse: true
+                Rectangle { anchors.fill:parent; color:'white'; opacity:0.5; z:-1 }
             }
             TextInput {
                 id: sizeEditor
@@ -81,13 +140,21 @@ Item {
                 horizontalAlignment:TextInput.AlignRight
                 activeFocusOnTab: true
                 selectByMouse: true
+                Rectangle { anchors.fill:parent; color:'white'; opacity:0.5; z:-1 }
+            }
+            MouseArea {
+                anchors.fill:parent
+                hoverEnabled:true
+                onEntered:highlight1=index
+                onExited: highlight1=-1
+                z:-1
             }
         }
     }
 
     Canvas {
         id: canvas
-        anchors{ top:parent.top; horizontalCenter:parent.horizontalCenter }
+        anchors{ top:parent.top; left:parent.left }
 
         property var ctx: available ? getContext('2d') : undefined
         width: nameWidth + sizeWidth + (ørooms.length/2)*rowHeight
@@ -95,7 +162,7 @@ Item {
 
         onPaint: {
             ctx.beginPath();
-            ørooms.forEach(function(room,i){
+            for (var i=ørooms.length;i--;){
                 var y    = i*rowHeight + 0.5,
                     down = (ørooms.length - i) * rowHeight/2,
                     up   = i * rowHeight/2;
@@ -104,7 +171,7 @@ Item {
                 ctx.lineTo(labelWidth+down, y+down);
                 ctx.moveTo(labelWidth,y);
                 ctx.lineTo(labelWidth+up, y-up);
-            });
+            }
             var y  = ørooms.length*rowHeight + 0.5,
                 up = ørooms.length*rowHeight/2;
             ctx.moveTo(0,y);
@@ -113,12 +180,4 @@ Item {
             ctx.stroke();
         }
     }
-
-    Button {
-        text: "Add Room"
-        height: rowHeight
-        anchors { horizontalCenter:parent.horizontalCenter; bottom:parent.bottom }
-        onClicked: addRoom()
-    }
-
 }

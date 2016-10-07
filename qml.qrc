@@ -3,7 +3,14 @@
         <file>main.qml</file>
         <file>RelationshipGrid.qml</file>
         <file alias="neutral">images/neutral.png</file>
-        <file alias="like">images/good.png</file>
-        <file alias="hate">images/bad.png</file>
+        <file>images/good.png</file>
+        <file>images/bad.png</file>
+        <file>springz.js</file>
+        <file>Diagram.qml</file>
+        <file alias="zero">images/zero.png</file>
+        <file alias="love">images/love.png</file>
+        <file alias="like">images/like.png</file>
+        <file alias="hate">images/hate.png</file>
+        <file alias="bleh">images/bleh.png</file>
     </qresource>
 </RCC>
