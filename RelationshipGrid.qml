@@ -45,6 +45,19 @@ Item {
         ødots[[u,v]].rating = rating;
     }
 
+    function reset(){
+        ørooms.forEach(function(r){ r.destroy() });
+        ørooms.length=0;
+        ørooms = ørooms;
+        for (var uv in ødots){
+            var d = ødots[uv];
+            d.visible = false;
+            d.destroy();
+        }
+        ødots = {};
+        canvas.requestPaint();
+    }
+
     function saveTo(fileUrl){
         var json = {};
         json.rooms = ørooms.map(function(r){ return { name:r.name, size:r.size } });
@@ -54,14 +67,6 @@ Item {
     }
 
     function loadFrom(jsObject){
-        ørooms.forEach(function(r){ r.destroy() });
-        ørooms.length=0;
-        for (var uv in ødots){
-            var d = ødots[uv];
-            delete ødots[uv];
-            d.destroy();
-        }
-
         jsObject.rooms.forEach(function(r){ addRoom(r.name,r.size) });
         for (var uv in jsObject.relationships){
             var rating = jsObject.relationships[uv];
@@ -98,7 +103,10 @@ Item {
                 hoverEnabled:true
                 onEntered: highlight1=u, highlight2=v
                 onExited:  highlight1 = highlight2 = -1
-                onClicked: rating = (rating + 1) % ratingNames.length;
+                onClicked: {
+                    root.forceActiveFocus();
+                    rating = (rating + 1) % ratingNames.length;
+                }
             }
             onRatingChanged: root.relationshipChanged(u,v,rating,root.ratingValues[rating],root.ratingNames[rating]);
         }
@@ -128,6 +136,7 @@ Item {
                 font.pixelSize:rowHeight*0.7
                 onEditingFinished: focus=false
                 activeFocusOnTab: true
+                onFocusChanged: if (focus) selectAll();
                 selectByMouse: true
                 Rectangle { anchors.fill:parent; color:'white'; opacity:0.5; z:-1 }
             }
@@ -139,6 +148,7 @@ Item {
                 font: nameEditor.font
                 horizontalAlignment:TextInput.AlignRight
                 activeFocusOnTab: true
+                onFocusChanged: if (focus) selectAll();
                 selectByMouse: true
                 Rectangle { anchors.fill:parent; color:'white'; opacity:0.5; z:-1 }
             }
@@ -161,6 +171,7 @@ Item {
         height: ørooms.length * rowHeight + 1
 
         onPaint: {
+            ctx.clearRect(0,0,width,height);
             ctx.beginPath();
             for (var i=ørooms.length;i--;){
                 var y    = i*rowHeight + 0.5,
