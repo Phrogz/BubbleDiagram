@@ -95,7 +95,7 @@ Item {
             property int v
             width:  rowHeight/Math.SQRT2
             height: rowHeight/Math.SQRT2
-            source: "qrc:/"+ratingNames[rating]
+            source: "qrc:/images/"+ratingNames[rating]
             x: labelWidth + (v-u)*rowHeight/2 - width/2
             y: (u+v+1)*rowHeight/2 - height/2
             MouseArea {

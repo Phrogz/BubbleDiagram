@@ -45,8 +45,18 @@ ApplicationWindow {
             MenuItem { text: diagram.paused ? "Resume Layout" : "Pause Layout"; shortcut: "Ctrl+T"; onTriggered:diagram.paused = !diagram.paused }
             MenuItem { text: "Shuffle Layout"; shortcut: "Ctrl+Y"; onTriggered:diagram.shuffle() }
             MenuSeparator { }
+            MenuItem { text: "Zoom Out"; shortcut: "Ctrl+-"; onTriggered:diagram.zoomOut() }
+            MenuItem { text: "Zoom In";  shortcut: "Ctrl+="; onTriggered:diagram.zoomIn()  }
+            MenuSeparator { }
             MenuItem { text: grid.visible ? "Hide Relationships" : "Show Relationships"; shortcut: "Ctrl+R"; onTriggered:grid.visible = !grid.visible }
         }
+    }
+
+    Image {
+        source: "qrc:/images/logo"
+        width:parent.width*0.15; height:width
+        opacity: 0.1
+        anchors { bottom:parent.bottom; right:parent.right; margins:parent.width*0.02 }
     }
 
     Diagram {
@@ -75,14 +85,15 @@ ApplicationWindow {
     Timer {
         id: defaultRooms
         running:true; interval:500;
-        onTriggered: reset();
+        onTriggered: {
+            grid.addRoom('My First Room',400);
+            grid.addRoom('Ctrl+J for More',400);
+        }
     }
 
     function reset(){
         diagram.reset();
         grid.reset();
-        grid.addRoom('My First Room',400);
-        grid.addRoom('Ctrl+J for More',400);
     }
 
     function save(){

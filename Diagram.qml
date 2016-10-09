@@ -109,6 +109,14 @@ Canvas {
         requestPaint();
     }
 
+    function zoomIn(){
+        scaleControl.value *= 1.5;
+    }
+
+    function zoomOut(){
+        scaleControl.value /= 1.5;
+    }
+
     onPaint: {
         ctx.reset();
         ctx.clearRect(0,0,width,height);
