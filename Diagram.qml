@@ -66,7 +66,7 @@ Canvas {
     }
 
     Timer {
-        interval:20; running:!paused; repeat:true
+        interval:1000/30; running:!paused; repeat:true
         onTriggered: {
             øspringz.simulate();
             fitToCanvas();

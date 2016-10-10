@@ -3,19 +3,23 @@ import QtQuick.Controls 1.4
 import QtQuick.Dialogs 1.1
 
 ApplicationWindow {
+    id: app
     visible: true
     width: 1200
     height: 800
     title: "Bubble Diagram"
 
+    property string docLoc
+
     menuBar: MenuBar {
         Menu {
             title: "File"
-            MenuItem { text:"New";   shortcut:StandardKey.New;     onTriggered:reset() }
-            MenuItem { text:"Open…"; shortcut: StandardKey.Open;   onTriggered:openFile() }
+            MenuItem { text:"New";   shortcut:StandardKey.New;  onTriggered:reset() }
+            MenuItem { text:"Open…"; shortcut:StandardKey.Open; onTriggered:openDialog.open() }
             MenuSeparator { }
-            MenuItem { text:"Save"; shortcut:StandardKey.Save;     onTriggered:save() }
-            MenuItem { text:"Export to Image…"; shortcut:'Ctrl+E'; onTriggered:exportDialog.open() }
+            MenuItem { text:"Save";  shortcut:StandardKey.Save; onTriggered: app.docLoc ? grid.saveTo(app.docLoc) : saveAsDialog.open() }
+            MenuItem { text:"Save As…"; shortcut:StandardKey.SaveAs; onTriggered:saveAsDialog.open() }
+            MenuItem { text:"Export to Image…"; shortcut:'Ctrl+E';   onTriggered:exportToImage() }
         }
         Menu {
             title: "Edit"
@@ -40,7 +44,7 @@ ApplicationWindow {
         }
     }
 
-    Image {
+    Item {
         id: content
         anchors.fill:parent
         Image {
@@ -67,15 +71,8 @@ ApplicationWindow {
         }
     }
 
-
-//    FileDialog {
-//        id: saveDialog
-//        folder: shortcuts.documents
-//        selectExisting: false
-//        onAccepted: grid.saveTo(fileUrl)
-//    }
-
     Timer {
+        // Gross hack to add rooms initially
         id: defaultRooms
         running:true; interval:500;
         onTriggered: {
@@ -85,35 +82,56 @@ ApplicationWindow {
     }
 
     function reset(){
+        docLoc = '';
         diagram.reset();
         grid.reset();
     }
 
-    function save(){
-        // saveDialog.open();
-        grid.saveTo();
+    FileDialog {
+        id: saveAsDialog
+        title: "File to save as"
+        nameFilters: ["Bubble Files (*.rooms)","All Files (*.*)"]
+        selectedNameFilter: '*.rooms'
+        selectExisting: false
+        onAccepted: {
+            grid.saveTo(fileUrl);
+            docLoc = (fileUrl+"");
+        }
     }
 
-    function openFile(){
-        var json = '{"rooms":[{"name":"Living Room","size":"1000"},{"name":"Dining Room","size":"500"},{"name":"Kitchen","size":"400"},{"name":"Powder Room","size":"40"},{"name":"Master Bedroom","size":"400"},{"name":"Media Room","size":"500"},{"name":"Office","size":"150"},{"name":"Master Bath","size":"60"},{"name":"Garage","size":"1200"},{"name":"Entry","size":"30"},{"name":"Deck","size":"500"},{"name":"Guest Bedroom","size":"300"},{"name":"Guest Bath","size":"300"}],"relationships":{"0,1":3,"1,2":3,"0,2":1,"2,3":3,"1,3":3,"0,4":0,"4,5":0,"0,5":3,"5,6":0,"3,6":3,"0,6":1,"6,7":1,"5,7":1,"4,7":4,"3,7":1,"2,7":1,"1,7":1,"0,7":1,"7,8":1,"4,8":1,"8,9":4,"7,9":1,"2,9":3,"1,9":3,"0,9":3,"9,10":1,"8,10":0,"7,10":1,"1,10":3,"0,10":3,"4,11":0,"11,12":4}}';
-        reset();
-        grid.loadFrom(JSON.parse(json));
+    FileDialog {
+        id: openDialog
+        title: "Select the file to load"
+        selectExisting: true
+        nameFilters: ["Bubble Files (*.rooms)","All Files (*.*)"]
+        selectedNameFilter: '*.rooms'
+        onAccepted: {
+            grid.openFrom(fileUrl);
+            app.docLoc = (fileUrl+"");
+        }
+    }
+
+    function exportToImage(){
+        var diagramWasPaused = diagram.paused;
+        diagram.paused = true;
+        exportDialog.open()
+        diagram.paused = diagramWasPaused;
     }
 
     FileDialog {
         id: exportDialog
-        folder: shortcuts.documents
         selectExisting: false
         onAccepted: {
-            var urlWithoutProtocol = fileUrl.toString().replace('file://','');
-            if (!/[^/]+\.\w+$/.test(urlWithoutProtocol))
-              urlWithoutProtocol += ".png";
-            var diagramWasPaused = diagram.paused;
-            diagram.paused = true;
+            var imageUrl = (fileUrl+"").replace('file://','');
+            if (!/[^/]+\.\w+$/.test(imageUrl)) urlWithoutProtocol += ".png";
             content.grabToImage(function(result){
-                if (!result.saveToFile(urlWithoutProtocol)) console.error('Unknown error saving image to',urlWithoutProtocol);
-                diagram.paused = diagramWasPaused;
+                var success = result.saveToFile(imageUrl);
+                if (!success) console.error('Unknown error saving image to',urlWithoutProtocol);
             });
         }
+    }
+
+    Component.onCompleted: {
+        saveAsDialog.folder = openDialog.folder = exportDialog.folder = exportDialog.shortcuts.documents
     }
 }

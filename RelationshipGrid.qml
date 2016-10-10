@@ -63,16 +63,32 @@ Item {
         json.rooms = ørooms.map(function(r){ return { name:r.name, size:r.size } });
         json.relationships = {};
         for (var uv in ødots) if (ødots[uv].rating!=defaultRating) json.relationships[uv]=ødots[uv].rating;
-        console.log(JSON.stringify(json));
+        json = JSON.stringify(json);
+
+        // Saved filenames should have a .rooms extension
+        fileUrl = (fileUrl+"").replace(/([^\/\\.]+(\.[^\/\\.]*)?$/,'$1.rooms');
+        var request = new XMLHttpRequest();
+        request.open("PUT", fileUrl, false);
+        request.send(json);
     }
 
-    function loadFrom(jsObject){
-        jsObject.rooms.forEach(function(r){ addRoom(r.name,r.size) });
-        for (var uv in jsObject.relationships){
-            var rating = jsObject.relationships[uv];
-            uv = uv.split(',');
-            setRelationship(uv[0],uv[1],rating);
-        }
+    function openFrom(fileUrl){
+        var request = new XMLHttpRequest();
+        request.open("GET", fileUrl, false);
+        request.send(null);
+        var json = request.responseText;
+        try {
+            var jsObject = JSON.parse(json);
+            if (jsObject.rooms && jsObject.relationships){
+                app.reset();
+                jsObject.rooms.forEach(function(r){ addRoom(r.name,r.size) });
+                for (var uv in jsObject.relationships){
+                    var rating = jsObject.relationships[uv];
+                    uv = uv.split(',');
+                    setRelationship(uv[0],uv[1],rating);
+                }
+            } else console.error("Could not load",fileUrl,json);
+        } catch(e){ console.log(e) }
 
         root.forceActiveFocus();
     }
