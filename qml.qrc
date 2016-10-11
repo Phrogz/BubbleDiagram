@@ -12,5 +12,6 @@
         <file alias="hate">images/hate.png</file>
         <file alias="bleh">images/bleh.png</file>
         <file alias="logo">images/wk-logo.png</file>
+        <file alias="delete">images/delete.png</file>
     </qresource>
 </RCC>

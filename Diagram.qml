@@ -9,7 +9,7 @@ Canvas {
     property bool paused: false
 
     property real visualScale: scaleControl.value
-    property var ønodeByIndex // FIXME: index will not be unique once deletion is allowed
+    property var ønodeById
     property var øspringz
     property var øcenter
     property var ctx: available ? getContext('2d') : undefined
@@ -76,14 +76,14 @@ Canvas {
     Component.onCompleted: reset()
 
     function reset(){
-        ønodeByIndex = {};
+        ønodeById = {};
         øspringz = new Springz.Collection({masses:true, scale:0.003, glide:0.95});
         øcenter = øspringz.node({locked:true,radius:40,force:0.2});
     }
 
     function addRoom(room){
         var node = øspringz.node({ obj:room, radius:Math.sqrt(room.size), x:(Math.random()-0.5)*100, y:(Math.random()-0.5)*100 });
-        ønodeByIndex[room.index] = node;
+        ønodeById[room.rId] = node;
         room.sizeChanged.connect(function(){
             node.radius = Math.sqrt(room.size) * scale;
             requestPaint();
@@ -93,9 +93,14 @@ Canvas {
         requestPaint();
     }
 
-    function setRating(index1,index2,rating,ratingValue,ratingName){
-        var n1 = ønodeByIndex[index1],
-            n2 = ønodeByIndex[index2];
+    function deleteRoom(room){
+        øspringz.removeNode(ønodeById[room.rId]);
+        requestPaint();
+    }
+
+    function setRating(id1,id2,rating,ratingValue,ratingName){
+        var n1 = ønodeById[id1],
+            n2 = ønodeById[id2];
 
         if (!n1 || !n2) return;
         if (ratingValue==0) øspringz.disconnect(n1,n2);

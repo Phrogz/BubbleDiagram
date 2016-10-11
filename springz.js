@@ -96,6 +96,11 @@ collection.disconnect( node1, node2 );
 	Permanently remove a connection between two nodes.
 
 
+collection.removeNode( node );
+
+	Permanently remove a node (and any connections using it).
+
+
 collection.simulate(function(nodes,springs){ ... });
 
 	Causes all connections to be applied once.
@@ -120,11 +125,11 @@ collection.uncollide();
 .pragma library
 
 var collectionDefaults = {
-	masses:false,
-    scale:     1.0,
-    uncollide: false,
-    glide:     0.5,
-    maxSpeed:  1e2
+	masses:    false,
+	scale:     1.0,
+	uncollide: false,
+	glide:     0.5,
+	maxSpeed:  1e2
 };
 
 var nodeDefaults = {
@@ -173,10 +178,27 @@ Collection.prototype.connect = function(n1,n2,opts){
 Collection.prototype.disconnect = function(n1,n2){
 	for (var i=this.connections.length;i--;){
 		var c = this.connections[i];
-		if ((c.node1==n1 && c.node2==n2) || c.node1==n2 && c.node2==n1){
+		if ((c.node1==n1 && c.node2==n2) || (c.node1==n2 && c.node2==n1)){
 			delete this.connectionById[c.id];
 			this.connections.splice(i,1);
 			return c;
+		}
+	}
+};
+
+Collection.prototype.removeNode = function(n){
+	delete this.nodeById[n.id];
+	for (var i=this.nodes.length;i--;){
+		if (this.nodes[i]==n){
+			this.nodes.splice(i,1);
+			break;
+		}
+	}
+	for (var i=this.connections.length;i--;){
+		var c = this.connections[i];
+		if (c.node1==n || c.node2==n){
+			delete this.connectionById[c.id];
+			this.connections.splice(i,1);
 		}
 	}
 };
@@ -187,12 +209,12 @@ Collection.prototype.simulate = function(callback){
 		c=this.connections[i];
 		n1=c.node1, n2=c.node2;
 		if (!c.active || (n1.locked && n2.locked)) continue;
-        dx = (n2.x-n1.x) || (Math.random()-0.5);
-        dy = (n2.y-n1.y) || (Math.random()-0.5);
-        var distance  = Math.sqrt(dx*dx + dy*dy);
-        var deviation = distance - (c.distance + n1.radius + n2.radius);
+	    dx = (n2.x-n1.x) || (Math.random()-0.5);
+	    dy = (n2.y-n1.y) || (Math.random()-0.5);
+	    var distance  = Math.sqrt(dx*dx + dy*dy);
+	    var deviation = distance - (c.distance + n1.radius + n2.radius);
 
-        var force = (c.force>0 ? deviation : 1/Math.pow(distance,0.2)) * this.scale * c.force * 0.5;
+	    var force = (c.force>0 ? deviation : 1/Math.pow(distance,0.2)) * this.scale * c.force * 0.5;
 
 		var force1, force2;
 		if (this.masses){
@@ -202,25 +224,25 @@ Collection.prototype.simulate = function(callback){
 			force1 *= force;
 		} else force1 = force2 = force/2;
 
-        // FIXME: if glide is 0, only the last-evaluated connection will move objects
+	    // FIXME: if glide is 0, only the last-evaluated connection will move objects
 		n1.vx = n1.vx*this.glide + dx*force2;
 		n1.vy = n1.vy*this.glide + dy*force2;
 		n2.vx = n2.vx*this.glide - dx*force1;
 		n2.vy = n2.vy*this.glide - dy*force1;
 	}
 
-    for (var i=this.nodes.length;i--;){
-        var n = this.nodes[i];
+	for (var i=this.nodes.length;i--;){
+	    var n = this.nodes[i];
 
-        // Prevent objects moving too fast (can result in NaN)
-        if      (n.vx> this.maxSpeed) n.vx =  this.maxSpeed;
-        else if (n.vx<-this.maxSpeed) n.vx = -this.maxSpeed;
-        if      (n.vy> this.maxSpeed) n.vy =  this.maxSpeed;
-        else if (n.vy<-this.maxSpeed) n.vy = -this.maxSpeed;
+	    // Prevent objects moving too fast (can result in NaN)
+	    if      (n.vx> this.maxSpeed) n.vx =  this.maxSpeed;
+	    else if (n.vx<-this.maxSpeed) n.vx = -this.maxSpeed;
+	    if      (n.vy> this.maxSpeed) n.vy =  this.maxSpeed;
+	    else if (n.vy<-this.maxSpeed) n.vy = -this.maxSpeed;
 
-        n.x += n.vx;
-        n.y += n.vy;
-    }
+	    n.x += n.vx;
+	    n.y += n.vy;
+	}
 
 	if (this.preventCollisions) this.uncollide();
 	if (callback) callback(this.nodes,this.connections);

@@ -66,6 +66,7 @@ ApplicationWindow {
 
             Component.onCompleted: {
                 roomAdded.connect(diagram.addRoom);
+                roomDeleted.connect(diagram.deleteRoom);
                 relationshipChanged.connect(diagram.setRating);
             }
         }

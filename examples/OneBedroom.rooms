@@ -1,16 +1,16 @@
 {
   "rooms" : [
-    { "name":"Living Room",  "size": 1000 },
-    { "name":"Dining Room",  "size":  500 },
-    { "name":"Kitchen",      "size":  400 },
-    { "name":"Powder Room",  "size":   40 },
-    { "name":"Bedroom",      "size":  400 },
-    { "name":"Media Room",   "size":  500 },
-    { "name":"Office",       "size":  300 },
-    { "name":"Master Bath",  "size":   60 },
-    { "name":"Garage",       "size": 1200 },
-    { "name":"Entry",        "size":   30 },
-    { "name":"Deck",         "size":  500 }
+    { "name":"Living Room",  "size": 1000, "rId":0 },
+    { "name":"Dining Room",  "size":  500, "rId":1 },
+    { "name":"Kitchen",      "size":  400, "rId":2 },
+    { "name":"Powder Room",  "size":   40, "rId":3 },
+    { "name":"Bedroom",      "size":  400, "rId":4 },
+    { "name":"Media Room",   "size":  500, "rId":5 },
+    { "name":"Office",       "size":  300, "rId":6 },
+    { "name":"Master Bath",  "size":   60, "rId":7 },
+    { "name":"Garage",       "size": 1200, "rId":8 },
+    { "name":"Entry",        "size":   30, "rId":9 },
+    { "name":"Deck",         "size":  500, "rId":10 }
   ],
   "relationships":{}
 }
