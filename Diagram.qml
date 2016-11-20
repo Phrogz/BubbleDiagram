@@ -1,69 +1,29 @@
 import QtQuick 2.0
 import QtQuick.Controls 1.4
-import QtQuick.Controls.Styles 1.4
 
 import "springz.js" as Springz
 
 Canvas {
     id: canvas
     property bool paused: false
+    property real visualScale: 1
+    property real springForce: 0.003
+    property real glideFactor: 0.95
 
-    property real visualScale: scaleControl.value
     property var ønodeById
     property var øspringz
     property var øcenter
     property var ctx: available ? getContext('2d') : undefined
+    property var øoverNode
+    property var ødragOffset
+
+    signal hoverNode(int nodeId)
 
     onVisualScaleChanged: fitToCanvas()
+    onSpringForceChanged: if (øspringz) øspringz.scale = springForce
+    onGlideFactorChanged: if (øspringz) øspringz.glide = glideFactor
     onWidthChanged:  fitToCanvas()
     onHeightChanged: fitToCanvas()
-
-    Row {
-        width:childrenRect.width;
-        height:20; spacing:10
-        anchors { top:parent.top; horizontalCenter:parent.horizontalCenter }
-
-        Button {
-            text: paused ? '▶' : '⏸';
-            height:parent.height; width:height
-            onClicked: paused = !paused
-            style: ButtonStyle { background: Rectangle { color:'transparent' } }
-        }
-
-        Slider {
-            id: scaleControl
-            height:parent.height
-            width:canvas.width/5
-            value: 2
-            minimumValue: 0.2
-            maximumValue: 6
-        }
-
-        Slider {
-            height:parent.height
-            width:canvas.width/5
-            value: 0.003
-            minimumValue: 0.0001
-            maximumValue: 0.01
-            onValueChanged: øspringz && (øspringz.scale=value)
-        }
-
-        Slider {
-            height:parent.height
-            width:canvas.width/5
-            value: 0.95
-            minimumValue: 0.01
-            maximumValue: 0.99
-            onValueChanged: øspringz && (øspringz.glide=value)
-        }
-
-        Button {
-            text: '🔀'
-            height:parent.height; width:height
-            onClicked: shuffle()
-            style: ButtonStyle { background: Rectangle { color:'transparent' } }
-        }
-    }
 
     Timer {
         interval:1000/30; running:!paused; repeat:true
@@ -75,9 +35,37 @@ Canvas {
 
     Component.onCompleted: reset()
 
+    MouseArea {
+        property real canX
+        property real canY
+        anchors.fill: parent
+        hoverEnabled: true
+        onPositionChanged: {
+            canX = (mouseX - canvas.width/2)  / visualScale;
+            canY = (mouseY - canvas.height/2) / visualScale;
+            if (ødragOffset){
+                øoverNode.x = ødragOffset.x + canX;
+                øoverNode.y = ødragOffset.y + canY;
+            } else øoverNode = øspringz.nodeAt(canX, canY);
+            if (paused) requestPaint();
+        }
+        onPressed: {
+            if (øoverNode){
+                øoverNode.locked = true;
+                ødragOffset = { x:øoverNode.x-canX, y:øoverNode.y-canY };
+            }
+            if (paused) requestPaint();
+        }
+        onDoubleClicked: {
+            if (øoverNode) øoverNode.locked = false;
+            if (paused) requestPaint();
+        }
+        onReleased: ødragOffset = null;
+    }
+
     function reset(){
         ønodeById = {};
-        øspringz = new Springz.Collection({masses:true, scale:0.003, glide:0.95});
+        øspringz = new Springz.Collection({masses:true, scale:springForce, glide:glideFactor});
         øcenter = øspringz.node({locked:true,radius:40,force:0.2});
     }
 
@@ -103,8 +91,8 @@ Canvas {
             n2 = ønodeById[id2];
 
         if (!n1 || !n2) return;
-        if (ratingValue==0) øspringz.disconnect(n1,n2);
-        else                øspringz.connect(n1,n2,{force:ratingValue});
+        if (ratingValue===0) øspringz.disconnect(n1,n2);
+        else                 øspringz.connect(n1,n2,{force:ratingValue});
         requestPaint();
     }
 
@@ -115,11 +103,11 @@ Canvas {
     }
 
     function zoomIn(){
-        scaleControl.value *= 1.5;
+        controls.scale *= 1.5;
     }
 
     function zoomOut(){
-        scaleControl.value /= 1.5;
+        controls.scale /= 1.5;
     }
 
     onPaint: {
@@ -134,7 +122,6 @@ Canvas {
         ctx.font = (14/visualScale).toFixed(2)+"pt sans-serif";
         ctx.lineWidth = 1/visualScale;
         øspringz.connections.forEach(drawConnection);
-        ctx.strokeStyle = 'black';
         øspringz.nodes
             .sort(function(n1,n2){ return (n2.radius-n1.radius) || (n1.id-n2.id) })
             .forEach(drawNode);
@@ -144,8 +131,9 @@ Canvas {
         if (!node.obj) return;
         ctx.beginPath();
         ctx.arc(node.x,node.y,node.radius,0,Math.PI*2);
-        ctx.fillStyle = 'lightgray';
+        ctx.fillStyle = (node==øoverNode) ? 'white' : 'lightgray';
         ctx.fill();
+        ctx.strokeStyle = node.locked ? 'red' : 'black';
         ctx.stroke();
         ctx.fillStyle = 'black';
         if (node.obj.name) fillTextMultiLine(ctx,node.obj.name,node.x,node.y);
@@ -169,7 +157,7 @@ Canvas {
 
     function shuffle(){
         øspringz.nodes.forEach(function(n){
-            if (n==øcenter) return;
+            if (n==øcenter || n.locked) return;
             n.x = (Math.random()-0.5) * width/visualScale;
             n.y = (Math.random()-0.5) * height/visualScale;
         })

@@ -4,6 +4,7 @@
         <file>RelationshipGrid.qml</file>
         <file>springz.js</file>
         <file>Diagram.qml</file>
+        <file>AdvancedControls.qml</file>
     </qresource>
     <qresource prefix="/images">
         <file alias="zero">images/zero.png</file>

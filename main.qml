@@ -72,6 +72,11 @@ ApplicationWindow {
         }
     }
 
+    AdvancedControls {
+        id: controls
+        anchors { top:parent.top; horizontalCenter:parent.horizontalCenter }
+    }
+
     Timer {
         // Gross hack to add rooms initially
         id: defaultRooms

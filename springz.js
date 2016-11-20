@@ -9,6 +9,7 @@ v1.0   20040614  Initial Release
 v1.0.1 20040626  Collisions push in both directions; some speed improvements
 v1.0.2 20041002  Tweaked to prevent warnings in ASV; no more    if (a=b)
 v2.0   20161006  Pure JavaScript (no SVG); works with QML
+v2.0.1 20161119  Locked nodes no longer move
 
 
 Feature Overview
@@ -220,15 +221,17 @@ Collection.prototype.simulate = function(callback){
 		if (this.masses){
 			var mass1 = n1.locked ? (1/0) : n1.mass || (n1.radius*n1.radius);
 			var mass2 = n2.locked ? (1/0) : n2.mass || (n2.radius*n2.radius);
-			force2 = (1-(force1=mass1/(mass1+mass2)))*force;
-			force1 *= force;
+            if (mass1===1/0) force1 = 1 - (force2=mass2/(mass1+mass2));
+            else             force2 = 1 - (force1=mass1/(mass1+mass2));
+            force1 *= force;
+            force2 *= force;
 		} else force1 = force2 = force/2;
 
 	    // FIXME: if glide is 0, only the last-evaluated connection will move objects
-		n1.vx = n1.vx*this.glide + dx*force2;
-		n1.vy = n1.vy*this.glide + dy*force2;
-		n2.vx = n2.vx*this.glide - dx*force1;
-		n2.vy = n2.vy*this.glide - dy*force1;
+        n1.vx = n1.locked ? 0 : n1.vx*this.glide + dx*force2;
+        n1.vy = n1.locked ? 0 : n1.vy*this.glide + dy*force2;
+        n2.vx = n2.locked ? 0 : n2.vx*this.glide - dx*force1;
+        n2.vy = n2.locked ? 0 : n2.vy*this.glide - dy*force1;
 	}
 
 	for (var i=this.nodes.length;i--;){
@@ -240,8 +243,10 @@ Collection.prototype.simulate = function(callback){
 	    if      (n.vy> this.maxSpeed) n.vy =  this.maxSpeed;
 	    else if (n.vy<-this.maxSpeed) n.vy = -this.maxSpeed;
 
-	    n.x += n.vx;
-	    n.y += n.vy;
+        if (!n.locked){
+            n.x += n.vx;
+            n.y += n.vy;
+        }
 	}
 
 	if (this.preventCollisions) this.uncollide();
@@ -257,13 +262,36 @@ Collection.prototype.fitWithin = function(width,height){
 	});
 };
 
-Collection.prototype.uncollide = function(callback){
+Collection.prototype.nodeAt = function(x,y){
+    // TODO: maintain a sorted list based on radius that re-sorts when radii are changed
+    var result;
+    var nodes = this.nodes.sort(function(n1,n2){ return (n2.radius-n1.radius) || (n1.id-n2.id) });
+    for (var i=nodes.length;i--;){ // iterate the sorted list in reverse, from top to bottom
+        var dx = Math.abs(x-nodes[i].x);
+        var r = nodes[i].radius;
+        if (dx < r){
+            var dy = Math.abs(y-nodes[i].y);
+            if (dy < r){
+                if (dx*dx + dy*dy < r*r) return nodes[i];
+            }
+        }
+    }
+};
 
+Collection.prototype.uncollide = function(callback){
 	if (callback) callback(this.nodes,this.connections);
 };
 
 function Node(options){
 	mergeDefaults(this,options,nodeDefaults);
+//    var radius = this.radius;
+//    Object.defineProperty(this, 'radius', {
+//        get: function(){ return radius },
+//        set: function(value) {
+//            radius = value;
+//            myCollection.resort();
+//        }
+//    });
 }
 
 function Connection(n1,n2,options){
