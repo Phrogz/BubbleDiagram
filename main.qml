@@ -19,7 +19,7 @@ ApplicationWindow {
             MenuSeparator { }
             MenuItem { text:"Save";  shortcut:StandardKey.Save; onTriggered: app.docLoc ? grid.saveTo(app.docLoc) : saveAsDialog.open() }
             MenuItem { text:"Save As…"; shortcut:StandardKey.SaveAs; onTriggered:saveAsDialog.open() }
-            MenuItem { text:"Export to Image…"; shortcut:'Ctrl+E';   onTriggered:exportToImage() }
+            MenuItem { text:"Export to Image…"; shortcut:'Ctrl+Shift+E';   onTriggered:exportToImage() }
         }
         Menu {
             title: "Edit"
@@ -40,7 +40,8 @@ ApplicationWindow {
             MenuItem { text: "Zoom Out"; shortcut: "Ctrl+-"; onTriggered:diagram.zoomOut() }
             MenuItem { text: "Zoom In";  shortcut: "Ctrl+="; onTriggered:diagram.zoomIn()  }
             MenuSeparator { }
-            MenuItem { text: grid.visible ? "Hide Relationships" : "Show Relationships"; shortcut: "Ctrl+R"; onTriggered:grid.visible = !grid.visible }
+            MenuItem { text: controls.open ? "Hide Controls" : "Show Controls"; shortcut:"Ctrl+E"; onTriggered:controls.open = !controls.open }
+            MenuItem { text: grid.open ? "Hide Relationships" : "Show Relationships"; shortcut: "Ctrl+R"; onTriggered:grid.open = !grid.open }
         }
     }
 
@@ -61,7 +62,7 @@ ApplicationWindow {
 
         RelationshipGrid {
             id: grid
-            anchors{ bottom:parent.bottom; left:parent.left; margins:10 }
+            anchors{ bottom:parent.bottom; left:parent.left; bottomMargin:grid.open ? parent.width*0.02 : -grid.height; leftMargin:parent.width*0.02 }
             rowHeight: 24
 
             Component.onCompleted: {
@@ -74,7 +75,6 @@ ApplicationWindow {
 
     AdvancedControls {
         id: controls
-        anchors { top:parent.top; horizontalCenter:parent.horizontalCenter }
     }
 
     Timer {
@@ -127,6 +127,8 @@ ApplicationWindow {
     FileDialog {
         id: exportDialog
         selectExisting: false
+        nameFilters: ["Portable Network Graphic (*.png)", "Other (*.png)"]
+        selectedNameFilter: '*.png'
         onAccepted: {
             var imageUrl = (fileUrl+"").replace('file://','');
             if (!/[^/]+\.\w+$/.test(imageUrl)) urlWithoutProtocol += ".png";

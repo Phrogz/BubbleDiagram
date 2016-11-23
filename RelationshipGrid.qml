@@ -1,12 +1,13 @@
 import QtQuick 2.7
 import QtQuick.Controls 1.4
 
-Item {
+Rectangle {
     id: root
     signal relationshipChanged(int id1, int id2, int ratingIndex, var ratingValue, string ratingName)
     signal roomAdded(var room)
     signal roomDeleted(var room)
 
+    property bool open: true
     property real rowHeight: 16
     property real nameWidth: 200
     property real sizeWidth: 80
@@ -15,17 +16,29 @@ Item {
     property var  ratingValues: [-100,-50,0,1,9]
     property var  ørooms: []
     property var  ødots:  ({}) // indexed by "u,v" of associated room rIds (not index)
-    property int highlight1: -1
-    property int highlight2: -1
-    property int nextId: 0
+    property int øhighlight1: -1
+    property int øhighlight2: -1
+    property int ønextId: 0
 
     height: canvas.height
+
+    color:'#dedede'; radius:5
+    border { color:'#cccccc'; width:2 }
+    Image {
+        anchors { bottom:parent.top; left:parent.left; bottomMargin:-2; leftMargin:rowHeight }
+        source:'qrc:/images/tab.png'
+        MouseArea {
+            anchors.fill:parent
+            cursorShape:Qt.PointingHandCursor
+            onClicked: open = !open
+        }
+    }
 
     property real labelWidth: nameWidth + sizeWidth
 
     function addRoom(name,size,rId){
-        if (rId!=undefined) nextId = rId+1;
-        else rId = nextId++;
+        if (rId!=undefined) ønextId = rId+1;
+        else rId = ønextId++;
         var index = ørooms.length;
         var r = room.createObject(canvas,{
           name: name||'Room '+(index+1),
@@ -136,11 +149,11 @@ Item {
         Image {
             opacity: {
                 var highlighted=true;
-                if (~highlight1){
-                    if (~highlight2) // over specific dot
-                        highlighted = (highlight1==uIndex && vIndex<=highlight2) || (highlight2==vIndex && uIndex>=highlight1);
+                if (~øhighlight1){
+                    if (~øhighlight2) // over specific dot
+                        highlighted = (øhighlight1==uIndex && vIndex<=øhighlight2) || (øhighlight2==vIndex && uIndex>=øhighlight1);
                     else // over specific room row
-                        highlighted = highlight1==uIndex || highlight1==vIndex || highlight2==uIndex || highlight2==vIndex;
+                        highlighted = øhighlight1==uIndex || øhighlight1==vIndex || øhighlight2==uIndex || øhighlight2==vIndex;
                 }
                 return highlighted ? 1 : 0.2;
             }
@@ -158,8 +171,9 @@ Item {
             MouseArea {
                 anchors.fill:parent
                 hoverEnabled:true
-                onEntered: highlight1=uIndex, highlight2=vIndex
-                onExited:  highlight1 = highlight2 = -1
+                onEntered: øhighlight1=uIndex, øhighlight2=vIndex
+                onExited:  øhighlight1 = øhighlight2 = -1
+                cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     root.forceActiveFocus();
                     rating = (rating + 1) % ratingNames.length;
@@ -173,7 +187,7 @@ Item {
         id: room
         Item {
             id: roomRoot
-            opacity: ~highlight1 ? (highlight1==index || highlight2==index ? 1 : 0.2) : 1
+            opacity: ~øhighlight1 ? (øhighlight1==index || øhighlight2==index ? 1 : 0.2) : 1
             property alias name: nameEditor.text
             property alias size: sizeEditor.text
             property int   index
@@ -192,7 +206,7 @@ Item {
                 Item {
                     width:rowHeight; height:rowHeight
                     Image {
-                        opacity: highlight1==index && highlight2==-1 ? 1 : 0
+                        opacity: øhighlight1==index && øhighlight2==-1 ? 1 : 0
                         height:rowHeight*0.6; width:height
                         anchors.centerIn:parent
                         source: 'qrc:/images/delete'
@@ -227,8 +241,8 @@ Item {
             MouseArea {
                 anchors.fill:parent
                 hoverEnabled:true
-                onEntered:highlight1=index
-                onExited: highlight1=-1
+                onEntered:øhighlight1=index
+                onExited: øhighlight1=-1
                 z:-1
             }
         }

@@ -111,7 +111,7 @@ Canvas {
     }
 
     onPaint: {
-        ctx.reset();
+        ctx.reset();        
         ctx.clearRect(0,0,width,height);
         if (!øspringz) return;
 
@@ -119,8 +119,9 @@ Canvas {
         ctx.scale(visualScale,visualScale);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        ctx.lineJoin = 'round';
+        ctx.globalAlpha = 0.9;
         ctx.font = (14/visualScale).toFixed(2)+"pt sans-serif";
-        ctx.lineWidth = 1/visualScale;
         øspringz.connections.forEach(drawConnection);
         øspringz.nodes
             .sort(function(n1,n2){ return (n2.radius-n1.radius) || (n1.id-n2.id) })
@@ -131,12 +132,16 @@ Canvas {
         if (!node.obj) return;
         ctx.beginPath();
         ctx.arc(node.x,node.y,node.radius,0,Math.PI*2);
-        ctx.fillStyle = (node==øoverNode) ? 'white' : 'lightgray';
+        ctx.fillStyle = (node===øoverNode) ? 'white' : 'lightgray';
         ctx.fill();
         ctx.strokeStyle = node.locked ? 'red' : 'black';
+        ctx.lineWidth = 1/visualScale;
         ctx.stroke();
-        ctx.fillStyle = 'black';
-        if (node.obj.name) fillTextMultiLine(ctx,node.obj.name,node.x,node.y);
+        if (node.obj.name) {
+            ctx.fillStyle = 'black';
+            ctx.strokeStyle = (node===øoverNode) ? 'white' : 'lightgray';
+            fillTextMultiLine(ctx,node.obj.name,node.x,node.y,2);
+        }
     }
 
     function drawConnection(c){
@@ -148,11 +153,14 @@ Canvas {
         ctx.stroke();
     }
 
-    function fillTextMultiLine(ctx, text, x, y) {
+    function fillTextMultiLine(ctx, text, x, y, strokeWidth) {
       var lineHeight = ctx.measureText("M").width * 1.2;
       var lines = text.split(" ");
-      for (var i=0; i<lines.length; ++i)
+      if (strokeWidth) ctx.lineWidth = strokeWidth;
+      for (var i=0; i<lines.length; ++i){
+        if (strokeWidth) ctx.strokeText(lines[i], x, y - (lines.length-1)*lineHeight/2 + lineHeight*i );
         ctx.fillText(lines[i], x, y - (lines.length-1)*lineHeight/2 + lineHeight*i );
+      }
     }
 
     function shuffle(){
